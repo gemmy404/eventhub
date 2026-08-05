@@ -1,7 +1,7 @@
 import {Body, Controller, Get, Headers, Param, Patch, Post, Query} from '@nestjs/common';
 import {EventsServiceService} from './events-service.service';
 import {CreateEventRequestDto, PaginationQueryDto, UpdateEventRequestDto} from "@app/contracts";
-import {Event} from "@prisma/client";
+import {EventResponseDto} from "@app/contracts/events/dto/event-response.dto";
 
 @Controller('events')
 export class EventsServiceController {
@@ -12,14 +12,14 @@ export class EventsServiceController {
     createEvent(
         @Body() createEventRequest: CreateEventRequestDto,
         @Headers('x-user-id') userId: string,
-    ): Promise<Event> {
+    ): Promise<EventResponseDto> {
         return this.eventsServiceService.createEvent(createEventRequest, userId);
     }
 
     @Get()
     findAllEvents(
         @Query() paginationQuery: PaginationQueryDto
-    ) {
+    ): Promise<{ events: EventResponseDto[], totalElements: number }> {
         return this.eventsServiceService.findAllEvents(paginationQuery);
     }
 
@@ -27,12 +27,12 @@ export class EventsServiceController {
     findMyEvents(
         @Query() paginationQuery: PaginationQueryDto,
         @Headers('x-user-id') userId: string,
-    ) {
+    ): Promise<{ events: EventResponseDto[], totalElements: number }> {
         return this.eventsServiceService.findMyEvents(paginationQuery, userId);
     }
 
     @Get(':eventId')
-    findEventById(@Param('eventId') eventId: string) {
+    findEventById(@Param('eventId') eventId: string): Promise<EventResponseDto> {
         return this.eventsServiceService.findEventById(eventId);
     }
 
@@ -40,7 +40,7 @@ export class EventsServiceController {
     publishEvent(
         @Param('eventId') eventId: string,
         @Headers('x-user-id') userId: string,
-    ) {
+    ): Promise<EventResponseDto> {
         return this.eventsServiceService.publishEvent(eventId, userId);
     }
 
@@ -48,7 +48,7 @@ export class EventsServiceController {
     cancelEvent(
         @Param('eventId') eventId: string,
         @Headers('x-user-id') userId: string,
-    ) {
+    ): Promise<EventResponseDto> {
         return this.eventsServiceService.cancelEvent(eventId, userId);
     }
 
@@ -57,7 +57,7 @@ export class EventsServiceController {
         @Param('eventId') eventId: string,
         @Body() updateEventRequest: UpdateEventRequestDto,
         @Headers('x-user-id') userId: string,
-    ) {
+    ): Promise<EventResponseDto> {
         return this.eventsServiceService.updateEvent(eventId, updateEventRequest, userId);
     }
 

@@ -11,14 +11,17 @@ import {ClientKafka} from "@nestjs/microservices";
 import {TicketsServiceRepository} from "./tickets-service.repository";
 import {
     CheckedInTicketRequestDto,
+    EventTicketResponseDto,
     PaginationQueryDto,
     PurchaseTicketRequestDto,
     TicketCancelledEvent,
-    TicketPurchasedEvent
+    TicketPurchasedEvent,
+    TicketResponseDto
 } from "@app/contracts";
 import {EventsServiceRepository} from "../../events-service/src/events-service.repository";
-import {EventStatus, Ticket, TicketStatus} from "@prisma/client";
+import {Event, EventStatus, Ticket, TicketStatus} from "@prisma/client";
 import {generateCodes} from "@app/common";
+import {TicketsServiceMapper} from "./tickets-service.mapper";
 
 @Injectable()
 export class TicketsServiceService implements OnModuleInit {
@@ -34,7 +37,10 @@ export class TicketsServiceService implements OnModuleInit {
         await this.kafkaClient.connect();
     }
 
-    async purchaseTicket(purchaseTicketRequest: PurchaseTicketRequestDto, userId: string) {
+    async purchaseTicket(
+        purchaseTicketRequest: PurchaseTicketRequestDto,
+        userId: string
+    ): Promise<TicketResponseDto> {
         const {eventId, quantity} = purchaseTicketRequest;
 
         const savedEvent = await this.eventsRepository.findEventById(eventId);
@@ -81,21 +87,13 @@ export class TicketsServiceService implements OnModuleInit {
         };
         this.kafkaClient.emit(KAFKA_TOPICS.TICKET_PURCHASED, ticketPurchasedEvent);
 
-        return {
-            message: 'Ticket purchased successfully',
-            data: {
-                id: createdTicket.id,
-                ticketCode: createdTicket.ticketCode,
-                eventTitle: savedEvent.title,
-                quantity: createdTicket.quantity,
-                totalPrice: createdTicket.totalPrice,
-                status: createdTicket.status,
-                purchasedAt: createdTicket.purchasedAt,
-            },
-        };
+        return TicketsServiceMapper.toTicketResponseDto(createdTicket, savedEvent);
     }
 
-    async findMyTickets(paginationQuery: PaginationQueryDto, userId: string) {
+    async findMyTickets(
+        paginationQuery: PaginationQueryDto,
+        userId: string
+    ): Promise<{ tickets: TicketResponseDto[], totalElements: number }> {
         const {size, page} = paginationQuery;
         const skip: number = (page - 1) * size;
 
@@ -103,12 +101,18 @@ export class TicketsServiceService implements OnModuleInit {
             .findAllTickets({userId}, size, skip);
 
         return {
-            tickets,
+            tickets: tickets.map(ticket =>
+                TicketsServiceMapper.toTicketResponseDto(ticket, ticket.event as Event)
+            ),
             totalElements,
         };
     }
 
-    async findEventTickets(eventId: string, organizerId: string, paginationQuery: PaginationQueryDto) {
+    async findEventTickets(
+        eventId: string,
+        organizerId: string,
+        paginationQuery: PaginationQueryDto
+    ): Promise<{ tickets: EventTicketResponseDto[], totalElements: number }> {
         const {size, page} = paginationQuery;
         const skip: number = (page - 1) * size;
 
@@ -122,21 +126,24 @@ export class TicketsServiceService implements OnModuleInit {
         }
 
         const {tickets, totalElements} = await this.ticketsRepository
-            .findAllTickets({eventId}, size, skip);
+            .findEventTickets(eventId, size, skip);
 
         return {
-            tickets,
+            tickets: tickets.map(TicketsServiceMapper.toEventTicketResponseDto),
             totalElements,
         };
     }
 
-    async findTicketById(ticketId: string) {
+    async findTicketById(ticketId: string): Promise<TicketResponseDto> {
         const savedTicket = (await this.ticketsRepository.findTicketById(ticketId))!;
+        if (!savedTicket) {
+            throw new NotFoundException(`Ticket with id ${ticketId} not found`);
+        }
 
-        return savedTicket;
+        return TicketsServiceMapper.toTicketResponseDto(savedTicket, savedTicket.event as Event);
     }
 
-    async cancelTicket(ticketId: string) {
+    async cancelTicket(ticketId: string): Promise<null> {
         const savedTicket = (await this.ticketsRepository.findTicketById(ticketId))!;
 
         if (savedTicket.status === TicketStatus.CANCELLED || savedTicket.status === TicketStatus.CHECKED_IN) {
@@ -154,13 +161,13 @@ export class TicketsServiceService implements OnModuleInit {
         };
         this.kafkaClient.emit(KAFKA_TOPICS.TICKET_CANCELLED, ticketCancelledEvent);
 
-        return {
-            message: 'Ticket cancelled successfully',
-            data: cancelledTicket,
-        };
+        return null;
     }
 
-    async checkInTicket(checkedInTicketRequest: CheckedInTicketRequestDto, organizerId: string) {
+    async checkInTicket(
+        checkedInTicketRequest: CheckedInTicketRequestDto,
+        organizerId: string
+    ): Promise<null> {
         const {ticketCode} = checkedInTicketRequest;
 
         const savedTicket = await this.ticketsRepository.findTicketByCode(ticketCode);
@@ -189,9 +196,7 @@ export class TicketsServiceService implements OnModuleInit {
             timestamp: new Date().toISOString(),
         });
 
-        return {
-            message: 'Ticket checked in successfully',
-            data: checkedInTicket,
-        };
+        return null;
     }
+    
 }

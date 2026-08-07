@@ -1,6 +1,6 @@
 import {HttpException} from "@nestjs/common";
 
-export const handleServiceError = (error: any) => {
+export const handleServiceError: (error: any) => never = (error: any): never => {
     if (error.response) {
         throw new HttpException(error.response.data, error.response.status);
     } else {

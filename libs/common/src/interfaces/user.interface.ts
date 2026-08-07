@@ -6,6 +6,6 @@ export interface IUser {
     updatedAt: Date;
 }
 
-export interface IAuthUser extends Pick<IUser, 'id' | 'email'> {
-    roles: string[];
+export interface IAuthUser extends Pick<IUser, 'id' | 'email' | 'name'> {
+    role: string;
 }

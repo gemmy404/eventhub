@@ -1,11 +1,18 @@
 import {ConflictException, Inject, Injectable, OnModuleInit, UnauthorizedException} from '@nestjs/common';
 import {KAFKA_SERVICE, KAFKA_TOPICS} from "@app/kafka";
 import {ClientKafka} from "@nestjs/microservices";
-import {LoginRequestDto, RegisterRequestDto, UserRegisteredEvent} from "@app/contracts";
+import {
+    LoginRequestDto,
+    LoginResponseDto,
+    RegisterRequestDto,
+    RegisterResponseDto,
+    UserRegisteredEvent
+} from "@app/contracts";
 import {AuthServiceRepository} from "./auth-service.repository";
 import {compare, hash} from "bcrypt";
 import {User} from "@prisma/client";
 import {JwtService} from "@nestjs/jwt";
+import {AuthServiceMapper} from "./auth-service.mapper";
 
 @Injectable()
 export class AuthServiceService implements OnModuleInit {
@@ -22,7 +29,7 @@ export class AuthServiceService implements OnModuleInit {
         await this.kafkaClient.connect();
     }
 
-    async register(registerRequest: RegisterRequestDto) {
+    async register(registerRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
         const existingUser = await this.authRepository.findUserByEmail(registerRequest.email);
         if (existingUser) {
             throw new ConflictException('Email already taken, please try another one');
@@ -43,13 +50,10 @@ export class AuthServiceService implements OnModuleInit {
         };
         this.kafkaClient.emit(KAFKA_TOPICS.USER_REGISTERED, userRegisteredEvent);
 
-        return {
-            message: 'User registered successfully',
-            userId: createdUser.id,
-        }
+        return {userId: createdUser.id};
     }
 
-    async login(loginRequest: LoginRequestDto) {
+    async login(loginRequest: LoginRequestDto): Promise<LoginResponseDto> {
         const savedUser = await this.authRepository.findUserByEmail(loginRequest.email);
         if (!savedUser || !(await compare(loginRequest.password, savedUser.password))) {
             throw new UnauthorizedException('Email or password is incorrect');
@@ -62,15 +66,7 @@ export class AuthServiceService implements OnModuleInit {
             timestamp: new Date().toISOString(),
         });
 
-        return {
-            accessToken: token,
-            user: {
-                id: savedUser.id,
-                email: savedUser.email,
-                name: savedUser.name,
-                role: savedUser.role,
-            },
-        };
+        return {accessToken: token, user: AuthServiceMapper.toAuthUserDto(savedUser)};
     }
 
 }

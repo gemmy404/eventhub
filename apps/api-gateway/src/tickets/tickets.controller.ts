@@ -1,6 +1,12 @@
 import {Body, Controller, Get, Param, Patch, Post, Query, UseGuards} from '@nestjs/common';
 import {TicketsService} from './tickets.service';
-import {CheckedInTicketRequestDto, CurrentUserDto, PaginationQueryDto, PurchaseTicketRequestDto} from "@app/contracts";
+import {
+    AppResponseDto,
+    CheckedInTicketRequestDto,
+    CurrentUserDto, EventTicketResponseDto,
+    PaginationQueryDto,
+    PurchaseTicketRequestDto, TicketResponseDto
+} from "@app/contracts";
 import {CurrentUser} from "@app/common";
 import {JwtAuthGuard} from "../../../auth-service/src/jwt-auth.guard";
 
@@ -14,7 +20,7 @@ export class TicketsController {
     purchaseTicket(
         @Body() purchaseTicketRequest: PurchaseTicketRequestDto,
         @CurrentUser() currentUser: CurrentUserDto
-    ) {
+    ): Promise<AppResponseDto<TicketResponseDto>> {
         return this.ticketsService.purchaseTicket(purchaseTicketRequest, currentUser);
     }
 
@@ -22,7 +28,7 @@ export class TicketsController {
     findMyTickets(
         @Query() paginationQuery: PaginationQueryDto,
         @CurrentUser() currentUser: CurrentUserDto
-    ) {
+    ): Promise<AppResponseDto<TicketResponseDto[]>> {
         return this.ticketsService.findMyTickets(paginationQuery, currentUser);
     }
 
@@ -31,7 +37,7 @@ export class TicketsController {
         @Param('eventId') eventId: string,
         @CurrentUser() currentUser: CurrentUserDto,
         @Query() paginationQuery: PaginationQueryDto
-    ) {
+    ): Promise<AppResponseDto<EventTicketResponseDto[]>> {
         return this.ticketsService.findEventTickets(eventId, currentUser, paginationQuery);
     }
 
@@ -39,7 +45,7 @@ export class TicketsController {
     findTicketById(
         @Param('ticketId') ticketId: string,
         @CurrentUser() currentUser: CurrentUserDto
-    ) {
+    ): Promise<AppResponseDto<TicketResponseDto>> {
         return this.ticketsService.findTicketById(ticketId, currentUser);
     }
 
@@ -47,7 +53,7 @@ export class TicketsController {
     cancelTicket(
         @Param('ticketId') ticketId: string,
         @CurrentUser() currentUser: CurrentUserDto
-    ) {
+    ): Promise<AppResponseDto<null>> {
         return this.ticketsService.cancelTicket(ticketId, currentUser);
     }
 
@@ -55,7 +61,7 @@ export class TicketsController {
     checkInTicket(
         @Body() checkedInTicketRequest: CheckedInTicketRequestDto,
         @CurrentUser() currentUser: CurrentUserDto
-    ) {
+    ): Promise<AppResponseDto<null>> {
         return this.ticketsService.checkInTicket(checkedInTicketRequest, currentUser);
     }
 

@@ -11,6 +11,8 @@ import {ClientKafka} from "@nestjs/microservices";
 import {EventsServiceRepository} from "./events-service.repository";
 import {CreateEventRequestDto, PaginationQueryDto, UpdateEventRequestDto} from "@app/contracts";
 import {Event, EventStatus} from "@prisma/client";
+import {EventsServiceMapper} from "./events-service.mapper";
+import {EventResponseDto} from "@app/contracts/events/dto/event-response.dto";
 
 @Injectable()
 export class EventsServiceService implements OnModuleInit {
@@ -25,7 +27,7 @@ export class EventsServiceService implements OnModuleInit {
         await this.kafkaClient.connect();
     }
 
-    async createEvent(createEventRequest: CreateEventRequestDto, userId: string): Promise<Event> {
+    async createEvent(createEventRequest: CreateEventRequestDto, userId: string): Promise<EventResponseDto> {
         const createdEvent = await this.eventsRepository.createEvent({
             ...createEventRequest,
             organizerId: userId,
@@ -38,10 +40,13 @@ export class EventsServiceService implements OnModuleInit {
             timestamp: new Date().toISOString(),
         });
 
-        return createdEvent;
+        return EventsServiceMapper.toEventResponseDto(createdEvent);
     }
 
-    async findAllEvents(paginationQuery: PaginationQueryDto): Promise<{ events: Event[], totalElements: number }> {
+    async findAllEvents(paginationQuery: PaginationQueryDto): Promise<{
+        events: EventResponseDto[],
+        totalElements: number
+    }> {
         const {size, page} = paginationQuery;
 
         const skip: number = (page - 1) * size;
@@ -51,12 +56,21 @@ export class EventsServiceService implements OnModuleInit {
         } = await this.eventsRepository.findAllEvents({status: EventStatus.PUBLISHED}, size, skip);
 
         return {
-            events,
+            events: events.map(EventsServiceMapper.toEventWithOrganizerResponseDto),
             totalElements,
         };
     }
 
-    async findEventById(id: string): Promise<Event> {
+    async findEventById(id: string): Promise<EventResponseDto> {
+        const savedEvent: Event | null = await this.eventsRepository.findEventById(id);
+        if (!savedEvent) {
+            throw new NotFoundException(`Event with id ${id} not found`);
+        }
+
+        return EventsServiceMapper.toEventResponseDto(savedEvent);
+    }
+
+    private async findEventEntityById(id: string): Promise<Event> {
         const savedEvent: Event | null = await this.eventsRepository.findEventById(id);
         if (!savedEvent) {
             throw new NotFoundException(`Event with id ${id} not found`);
@@ -69,8 +83,8 @@ export class EventsServiceService implements OnModuleInit {
         id: string,
         updateEventRequest: UpdateEventRequestDto,
         userId: string
-    ): Promise<Event> {
-        const savedEvent: Event = await this.findEventById(id);
+    ): Promise<EventResponseDto> {
+        const savedEvent: Event = await this.findEventEntityById(id);
 
         if (savedEvent.organizerId !== userId) {
             throw new ForbiddenException('You are not authorized to update this event');
@@ -87,11 +101,11 @@ export class EventsServiceService implements OnModuleInit {
             timestamp: new Date().toISOString(),
         });
 
-        return updatedData;
+        return EventsServiceMapper.toEventResponseDto(updatedData);
     }
 
     async findMyEvents(paginationQuery: PaginationQueryDto, userId: string): Promise<{
-        events: Event[],
+        events: EventResponseDto[],
         totalElements: number
     }> {
         const {size, page} = paginationQuery;
@@ -103,13 +117,13 @@ export class EventsServiceService implements OnModuleInit {
         } = await this.eventsRepository.findAllEvents({organizerId: userId}, size, skip);
 
         return {
-            events,
+            events: events.map(EventsServiceMapper.toEventResponseDto),
             totalElements,
         };
     }
 
-    async publishEvent(id: string, userId: string): Promise<Event> {
-        const savedEvent = await this.findEventById(id);
+    async publishEvent(id: string, userId: string): Promise<EventResponseDto> {
+        const savedEvent: Event = await this.findEventEntityById(id);
         if (savedEvent.status === EventStatus.PUBLISHED) {
             throw new ConflictException('Event is already published');
         }
@@ -121,11 +135,11 @@ export class EventsServiceService implements OnModuleInit {
         savedEvent.status = EventStatus.PUBLISHED;
         const publishedEvent = await this.eventsRepository.updateEvent(id, savedEvent);
 
-        return publishedEvent;
+        return EventsServiceMapper.toEventResponseDto(publishedEvent);
     }
 
-    async cancelEvent(id: string, userId: string): Promise<Event> {
-        const savedEvent = await this.findEventById(id);
+    async cancelEvent(id: string, userId: string): Promise<EventResponseDto> {
+        const savedEvent: Event = await this.findEventEntityById(id);
         if (savedEvent.status === EventStatus.CANCELLED) {
             throw new ConflictException('Event is already cancelled');
         }
@@ -143,7 +157,7 @@ export class EventsServiceService implements OnModuleInit {
             timestamp: new Date().toISOString(),
         });
 
-        return cancelledEvent;
+        return EventsServiceMapper.toEventResponseDto(cancelledEvent);
     }
 
 }

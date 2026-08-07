@@ -1,7 +1,13 @@
 import {Injectable} from '@nestjs/common';
 import {HttpService} from "@nestjs/axios";
-import {handleServiceError, SERVICES_PORTS} from "@app/common";
-import {LoginRequestDto, RegisterRequestDto} from "@app/contracts";
+import {handleServiceError, HttpStatusText, SERVICES_PORTS} from "@app/common";
+import {
+    AppResponseDto,
+    LoginRequestDto,
+    LoginResponseDto,
+    RegisterRequestDto,
+    RegisterResponseDto
+} from "@app/contracts";
 import {lastValueFrom} from "rxjs";
 
 @Injectable()
@@ -15,27 +21,39 @@ export class AuthService {
     ) {
     }
 
-    async register(registerRequest: RegisterRequestDto) {
+    async register(registerRequest: RegisterRequestDto): Promise<AppResponseDto<RegisterResponseDto>> {
         try {
-            const response = await lastValueFrom(this.httpService.post(
-                `${this.AUTH_SERVICE_URL}/register`,
-                registerRequest,
-            ));
+            const {data} = await lastValueFrom(
+                this.httpService.post<RegisterResponseDto>(
+                    `${this.AUTH_SERVICE_URL}/register`,
+                    registerRequest,
+                )
+            );
 
-            return response.data;
+            return {
+                status: HttpStatusText.SUCCESS,
+                message: 'User register successfully',
+                data: data,
+            };
         } catch (err) {
             handleServiceError(err);
         }
     }
 
-    async login(loginRequest: LoginRequestDto) {
+    async login(loginRequest: LoginRequestDto): Promise<AppResponseDto<LoginResponseDto>> {
         try {
-            const response = await lastValueFrom(this.httpService.post(
-                `${this.AUTH_SERVICE_URL}/login`,
-                loginRequest,
-            ));
+            const {data} = await lastValueFrom(
+                this.httpService.post<LoginResponseDto>(
+                    `${this.AUTH_SERVICE_URL}/login`,
+                    loginRequest,
+                )
+            );
 
-            return response.data;
+            return {
+                status: HttpStatusText.SUCCESS,
+                message: 'User logged in successfully',
+                data: data,
+            }
         } catch (err) {
             handleServiceError(err);
         }

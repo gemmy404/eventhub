@@ -1,6 +1,12 @@
 import {Body, Controller, Post} from '@nestjs/common';
 import {AuthService} from "./auth.service";
-import {LoginRequestDto, RegisterRequestDto} from "@app/contracts";
+import {
+    AppResponseDto,
+    LoginRequestDto,
+    LoginResponseDto,
+    RegisterRequestDto,
+    RegisterResponseDto
+} from "@app/contracts";
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -10,12 +16,12 @@ export class AuthController {
     }
 
     @Post('register')
-    register(@Body() registerRequest: RegisterRequestDto) {
+    register(@Body() registerRequest: RegisterRequestDto): Promise<AppResponseDto<RegisterResponseDto>> {
         return this.authService.register(registerRequest);
     }
 
     @Post('login')
-    login(@Body() loginRequest: LoginRequestDto) {
+    login(@Body() loginRequest: LoginRequestDto): Promise<AppResponseDto<LoginResponseDto>> {
         return this.authService.login(loginRequest);
     }
 

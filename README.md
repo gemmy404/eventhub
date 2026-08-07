@@ -1,98 +1,433 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+<div align="center">
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<img src="docs/assets/logo.svg" alt="EventHub Logo" width="140">
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# EventHub
 
-## Description
+### A Modern Event Ticketing Platform Built with Microservices
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A production-inspired backend that enables user authentication, event management, ticket purchasing, attendee check-in, and asynchronous notifications using Apache Kafka.
 
-## Project setup
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
 
-```bash
-$ npm install
+</div>
+
+---
+
+## Project Description
+
+EventHub is a backend platform for managing events and ticket sales, designed around a **Microservices Architecture**. Users can register, create and publish events, purchase and cancel tickets, check in attendees at the door, and receive email notifications tied to their activity.
+
+The system is organized as a **monorepo** with independently deployable NestJS services that communicate synchronously via REST (through an API Gateway) and asynchronously via **Apache Kafka**, with shared logic centralized in internal libraries. The goal of the architecture is scalability, clear separation of concerns, and maintainable service boundaries.
+
+---
+
+## Features
+
+<table>
+<tr>
+<td valign="top" width="33%">
+
+**Authentication**
+- User registration
+- Login
+- JWT authentication
+- Route protection (guards)
+- Current user decorator
+
+</td>
+<td valign="top" width="33%">
+
+**Events**
+- Create event
+- Update event
+- Publish event
+- Cancel event
+- Browse events
+- Event pagination
+- Organizer authorization
+
+</td>
+<td valign="top" width="33%">
+
+**Tickets**
+- Purchase ticket
+- Cancel ticket
+- Ticket check-in
+- Ticket ownership authorization
+- Unique ticket codes
+
+</td>
+</tr>
+</table>
+
+**Notifications**
+- Kafka consumers
+- Email notifications
+- Template-based emails (Handlebars)
+- Event-driven notification processing
+
+---
+
+## Architecture
+
+EventHub follows a **monorepo microservices** layout. Client requests enter through the API Gateway and are routed to the relevant service over REST. Domain events (such as a ticket purchase or event cancellation) are published to Kafka, allowing services like Notifications to react asynchronously without being coupled to the originating service.
+
+```mermaid
+flowchart LR
+    Client([Client])
+
+    subgraph Gateway["API Gateway"]
+        GW[apps/api-gateway]
+    end
+
+    subgraph Services["Microservices"]
+        AUTH[Auth Service]
+        EVENTS[Events Service]
+        TICKETS[Tickets Service]
+        NOTIF[Notifications Service]
+    end
+
+    KAFKA[(Apache Kafka)]
+    DB[(PostgreSQL)]
+
+    Client -->|REST| GW
+    GW -->|REST| AUTH
+    GW -->|REST| EVENTS
+    GW -->|REST| TICKETS
+
+    AUTH --> DB
+    EVENTS --> DB
+    TICKETS --> DB
+
+    AUTH -->|Publish Events| KAFKA
+    EVENTS -->|Publish Events| KAFKA
+    TICKETS -->|Publish Events| KAFKA
+    KAFKA -->|Consume Events| NOTIF
 ```
 
-## Compile and run the project
+### Architectural Concepts
 
-```bash
-# development
-$ npm run start
+| Concept | Applied In |
+|---|---|
+| Microservices | Independent services under `apps/` |
+| Monorepo | Shared `libs/` consumed by all services |
+| Repository Pattern | Data access abstraction over Prisma |
+| DTO Pattern | Request/response validation contracts |
+| Mapper Pattern | Entity-to-DTO transformation |
+| Event-Driven Architecture | Kafka producers/consumers |
+| Shared Libraries | `common`, `contracts`, `database`, `kafka` |
+| Domain Contracts | `libs/contracts` |
+| Guards | Route/ownership authorization |
+| Decorators | `libs/common/decorators`, current-user extraction |
+| Validation Pipes | `class-validator` / `class-transformer` |
+| Exception Handling | Centralized error handling |
+| Dependency Injection | NestJS module system throughout |
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
+## Tech Stack
+
+| Category | Technologies |
+|---|---|
+| Backend | Node.js, NestJS, TypeScript |
+| Database | PostgreSQL, Prisma ORM |
+| Messaging | Apache Kafka, KafkaJS |
+| Authentication | JWT, Passport.js |
+| Email | Nodemailer, MailerModule, Handlebars templates |
+| Infrastructure | Docker, Docker Compose |
+| Validation | class-validator, class-transformer |
+
+
+---
+
+## Microservices
+
+| Service | Path | Responsibility |
+|---|---|---|
+| API Gateway | `apps/api-gateway` | Entry point for clients; routes REST requests to internal services; hosts `auth`, `events`, and `tickets` route modules |
+| Auth Service | `apps/auth-service` | User registration, login, and JWT issuance |
+| Events Service | `apps/events-service` | Event creation, publishing, updates, cancellation, and browsing |
+| Tickets Service | `apps/tickets-service` | Ticket purchase, cancellation, and check-in |
+| Notifications Service | `apps/notifications-service` | Consumes Kafka events and sends templated email notifications |
+
+---
+
+## Shared Libraries
+
+<table>
+<tr>
+<th align="left">Library</th>
+<th align="left">Purpose</th>
+</tr>
+<tr>
+<td valign="top"><code>libs/common</code></td>
+<td valign="top">
+Cross-cutting utilities shared across all services: constants, decorators (e.g. current user), enums, guards, exception handlers, interfaces, and general-purpose utilities.
+</td>
+</tr>
+<tr>
+<td valign="top"><code>libs/contracts</code></td>
+<td valign="top">
+Defines shared domain contracts (DTOs and typed payloads) for <code>auth</code>, <code>common</code>, <code>events</code>, <code>pagination</code>, and <code>tickets</code>. Ensures API Gateway and services agree on request/response and Kafka message shapes.
+</td>
+</tr>
+<tr>
+<td valign="top"><code>libs/database</code></td>
+<td valign="top">
+Centralizes the Prisma schema, migrations, and a <code>PrismaService</code>/<code>PrismaModule</code> used by services that need database access, keeping the schema and client in one place.
+</td>
+</tr>
+<tr>
+<td valign="top"><code>libs/kafka</code></td>
+<td valign="top">
+Wraps Kafka producer/consumer setup behind a <code>KafkaModule</code> and <code>KafkaService</code>, with shared topic/constant definitions, so services publish and consume events consistently.
+</td>
+</tr>
+</table>
+
+---
+
+## Folder Structure
+
+```
+eventhub/
+├── apps/
+│   ├── api-gateway/
+│   │   ├── src/
+│   │   │   ├── auth/
+│   │   │   ├── events/
+│   │   │   ├── tickets/
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   └── tsconfig.app.json
+│   ├── auth-service/
+│   ├── events-service/
+│   ├── notifications-service/
+│   └── tickets-service/
+├── libs/
+│   ├── common/
+│   │   ├── src/
+│   │   │   ├── constants/
+│   │   │   ├── decorators/
+│   │   │   ├── enums/
+│   │   │   ├── guards/
+│   │   │   ├── handlers/
+│   │   │   ├── interfaces/
+│   │   │   ├── utils/
+│   │   │   ├── common.module.ts
+│   │   │   ├── common.service.ts
+│   │   │   └── index.ts
+│   │   └── tsconfig.lib.json
+│   ├── contracts/
+│   │   ├── src/
+│   │   │   ├── auth/
+│   │   │   ├── common/
+│   │   │   ├── events/
+│   │   │   ├── pagination/
+│   │   │   ├── tickets/
+│   │   │   ├── contracts.module.ts
+│   │   │   ├── contracts.service.ts
+│   │   │   └── index.ts
+│   │   └── tsconfig.lib.json
+│   ├── database/
+│   │   ├── prisma/
+│   │   │   ├── migrations/
+│   │   │   └── schema.prisma
+│   │   ├── src/
+│   │   │   ├── index.ts
+│   │   │   ├── prisma.module.ts
+│   │   │   └── prisma.service.ts
+│   │   └── tsconfig.lib.json
+│   └── kafka/
+│       ├── src/
+│       │   ├── constants/
+│       │   ├── index.ts
+│       │   ├── kafka.module.ts
+│       │   └── kafka.service.ts
+│       └── tsconfig.lib.json
+├── docs/
+│   └── assets/
+│       └── logo.svg
+├── .env
+├── .gitignore
+├── .prettierrc
+├── docker-compose.yml
+├── eslint.config.mjs
+├── LICENSE
+├── nest-cli.json
+├── package.json
+├── package-lock.json
+├── README.md
+├── tsconfig.build.json
+└── tsconfig.json
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## API Flow
 
-# e2e tests
-$ npm run test:e2e
+A typical synchronous request (e.g. purchasing a ticket) flows through the gateway to the owning service:
 
-# test coverage
-$ npm run test:cov
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant GW as API Gateway
+    participant TS as Tickets Service
+    participant DB as PostgreSQL
+
+    C->>GW: POST /api/v1/tickets/purchase-ticket (JWT)
+    GW->>GW: Validate JWT / Guard
+    GW->>TS: Forward request
+    TS->>DB: Create ticket record
+    DB-->>TS: Ticket persisted
+    TS-->>GW: Ticket response
+    GW-->>C: 201 Created
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Event Flow
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Domain actions are published to Kafka so downstream services can react without direct coupling. Notifications, for example, consumes events to send emails:
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```mermaid
+sequenceDiagram
+    participant TS as Tickets Service
+    participant K as Kafka
+    participant NS as Notifications Service
+    participant Mail as Mail Provider
+
+    TS->>K: Publish "ticket.purchased"
+    K->>NS: Deliver event
+    NS->>NS: Render Handlebars template
+    NS->>Mail: Send email via Nodemailer
+    Mail-->>NS: Delivery result
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## Installation
 
-Check out a few resources that may come in handy when working with NestJS:
+<details>
+<summary><strong>Prerequisites</strong></summary>
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Node.js
+- Docker and Docker Compose
+- PostgreSQL (or use the provided Docker service)
+- Apache Kafka broker (or use the provided Docker service)
 
-## Support
+</details>
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Clone the repository
+git clone https://github.com/gemmy404/eventhub.git
+cd eventhub
 
-## Stay in touch
+# Install dependencies
+npm install
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
+
+## Environment Variables
+
+Create a `.env` file at the project root:
+
+```env
+# Database
+DB_HOST=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+DB_PORT=
+DATABASE_URL=
+
+# Kafka
+KAFKA_BROKER=
+
+# JWT
+JWT_ACCESS_TOKEN_SECRET=
+JWT_ACCESS_TOKEN_EXPIRATION_MS=
+
+# Mail
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USER=
+MAIL_PASS=
+```
+
+| Variable | Description |
+|---|---|
+| `DB_HOST` | PostgreSQL host |
+| `POSTGRES_USER` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `POSTGRES_DB` | PostgreSQL database name |
+| `DB_PORT` | PostgreSQL port |
+| `DATABASE_URL` | Full Prisma connection string |
+| `KAFKA_BROKER` | Kafka broker address |
+| `JWT_ACCESS_TOKEN_SECRET` | Secret used to sign access tokens |
+| `JWT_ACCESS_TOKEN_EXPIRATION_MS` | Access token expiration (ms) |
+| `MAIL_HOST` | SMTP host |
+| `MAIL_PORT` | SMTP port |
+| `MAIL_USER` | SMTP username |
+| `MAIL_PASS` | SMTP password |
+
+---
+
+## Running with Docker
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Run in detached mode
+docker-compose up -d
+
+# Stop services
+docker-compose down
+```
+
+---
+
+## Running Locally
+
+<details>
+<summary><strong>Run a service without Docker</strong></summary>
+
+```bash
+# Apply database migrations
+npx prisma migrate dev --schema=libs/database/prisma/schema.prisma
+
+# Start a specific service in watch mode
+npm run start:dev <service-name>
+
+# Example
+npm run start:dev api-gateway
+```
+
+</details>
+
+---
+
+## Available Services
+
+| Service | Default Purpose |
+|---|---|
+| API Gateway | Public HTTP entry point |
+| Auth Service | Handles registration and login |
+| Events Service | Manages event lifecycle |
+| Tickets Service | Manages ticket purchase and check-in |
+| Notifications Service | Sends event-driven email notifications |
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

@@ -36,6 +36,30 @@ export class TicketsServiceRepository {
         return {tickets, totalElements};
     }
 
+    async findEventTickets(eventId: string, take: number, skip: number) {
+        const [tickets, totalElements] = await Promise.all([
+            this.prisma.ticket.findMany({
+                where: {eventId},
+                take,
+                skip,
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                        }
+                    }
+                },
+                orderBy: {
+                    purchasedAt: 'desc'
+                }
+            }),
+            this.prisma.ticket.count({where: {eventId}}),
+        ]);
+
+        return {tickets, totalElements};
+    }
+
     async findTicketById(id: string) {
         return this.prisma.ticket.findUnique({
             where: {id},
@@ -72,6 +96,14 @@ export class TicketsServiceRepository {
     async createTicket(ticket: Ticket) {
         return this.prisma.ticket.create({
             data: ticket,
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                    }
+                }
+            }
         });
     }
 
@@ -94,6 +126,19 @@ export class TicketsServiceRepository {
         return this.prisma.ticket.update({
             where: {id},
             data: ticket,
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                    }
+                },
+                event: {
+                    select: {
+                        title: true,
+                    }
+                }
+            }
         });
     }
 

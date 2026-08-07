@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket Cancelled</title>
+</head>
+
+<body style="margin:0;padding:40px;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#333;">
+
+<div style="max-width:600px;margin:auto;background:#ffffff;border-radius:8px;padding:40px;">
+
+    <h1 style="margin-top:0;color:#dc2626;">
+        Ticket Cancelled
+    </h1>
+
+    <p>Hi <strong>{{name}}</strong>,</p>
+
+    <p>
+        Your ticket for the following event has been cancelled successfully.
+    </p>
+
+    <table style="width:100%;border-collapse:collapse;margin:25px 0;">
+
+        <tr>
+            <td style="padding:10px;font-weight:bold;">Event</td>
+            <td>{{eventTitle}}</td>
+        </tr>
+
+        <tr style="background:#f9fafb;">
+            <td style="padding:10px;font-weight:bold;">Ticket ID</td>
+            <td>{{ticketId}}</td>
+        </tr>
+
+    </table>
+
+    <p>
+        If you cancelled this ticket intentionally, no further action is required.
+    </p>
+
+    <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;">
+
+    <p style="font-size:14px;color:#6b7280;">
+        Thank you for using <strong>EventHub</strong>.<br>
+        We hope to see you at another event soon.
+    </p>
+
+</div>
+
+</body>
+
+</html>

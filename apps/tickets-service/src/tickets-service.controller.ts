@@ -1,6 +1,12 @@
 import {Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards} from '@nestjs/common';
 import {TicketsServiceService} from './tickets-service.service';
-import {CheckedInTicketRequestDto, PaginationQueryDto, PurchaseTicketRequestDto} from "@app/contracts";
+import {
+    CheckedInTicketRequestDto,
+    EventTicketResponseDto,
+    PaginationQueryDto,
+    PurchaseTicketRequestDto,
+    TicketResponseDto
+} from "@app/contracts";
 import {IsTicketOwnerGuard} from "./is-ticket-owner.guard";
 
 @Controller('tickets')
@@ -13,7 +19,7 @@ export class TicketsServiceController {
     purchaseTicket(
         @Body() purchaseTicketRequest: PurchaseTicketRequestDto,
         @Headers('x-user-id') userId: string
-    ) {
+    ): Promise<TicketResponseDto> {
         return this.ticketsServiceService.purchaseTicket(purchaseTicketRequest, userId);
     }
 
@@ -21,7 +27,7 @@ export class TicketsServiceController {
     findMyTickets(
         @Query() paginationQuery: PaginationQueryDto,
         @Headers('x-user-id') userId: string
-    ) {
+    ): Promise<{ tickets: TicketResponseDto[], totalElements: number }> {
         return this.ticketsServiceService.findMyTickets(paginationQuery, userId);
     }
 
@@ -30,19 +36,19 @@ export class TicketsServiceController {
         @Param('eventId') eventId: string,
         @Headers('x-user-id') organizerId: string,
         @Query() paginationQuery: PaginationQueryDto
-    ) {
+    ): Promise<{ tickets: EventTicketResponseDto[], totalElements: number }> {
         return this.ticketsServiceService.findEventTickets(eventId, organizerId, paginationQuery);
     }
 
     @Get(':ticketId')
     @UseGuards(IsTicketOwnerGuard)
-    findTicketById(@Param('ticketId') ticketId: string) {
+    findTicketById(@Param('ticketId') ticketId: string): Promise<TicketResponseDto> {
         return this.ticketsServiceService.findTicketById(ticketId);
     }
 
     @Patch(':ticketId/cancel-ticket')
     @UseGuards(IsTicketOwnerGuard)
-    cancelTicket(@Param('ticketId') ticketId: string) {
+    cancelTicket(@Param('ticketId') ticketId: string): Promise<null> {
         return this.ticketsServiceService.cancelTicket(ticketId);
     }
 
@@ -50,7 +56,7 @@ export class TicketsServiceController {
     checkInTicket(
         @Body() checkedInTicketRequest: CheckedInTicketRequestDto,
         @Headers('x-user-id') organizerId: string
-    ) {
+    ): Promise<null> {
         return this.ticketsServiceService.checkInTicket(checkedInTicketRequest, organizerId);
     }
 

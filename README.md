@@ -77,7 +77,7 @@ The system is organized as a **monorepo** with independently deployable NestJS s
 
 ## Architecture
 
-EventHub follows a **monorepo microservices** layout. Client requests enter through the API Gateway and are routed to the relevant service over REST. Domain events (such as a ticket purchase or event cancellation) are published to Kafka, allowing services like Notifications to react asynchronously without being coupled to the originating service.
+EventHub follows a **monorepo microservices** layout. Client requests enter through the API Gateway and are routed to the relevant service over REST. Apache Kafka is used for both **asynchronous event-driven communication** and **synchronous request/response communication between microservices**. Domain events (such as a ticket purchase or event cancellation) allow services like Notifications to react asynchronously, while request/response messaging allows services to retrieve required data without directly accessing another service's repository or database.
 
 ```mermaid
 flowchart LR
@@ -121,7 +121,8 @@ flowchart LR
 | Repository Pattern | Data access abstraction over Prisma |
 | DTO Pattern | Request/response validation contracts |
 | Mapper Pattern | Entity-to-DTO transformation |
-| Event-Driven Architecture | Kafka producers/consumers |
+| Event-Driven Architecture | Kafka producers/consumers for asynchronous domain events |
+| Inter-Service Communication | Kafka request/response for synchronous service-to-service communication |
 | Shared Libraries | `common`, `contracts`, `database`, `kafka` |
 | Domain Contracts | `libs/contracts` |
 | Guards | Route/ownership authorization |

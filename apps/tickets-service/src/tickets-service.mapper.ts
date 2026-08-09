@@ -1,5 +1,5 @@
 import {Event, Prisma, Ticket} from "@prisma/client";
-import {EventTicketResponseDto, TicketResponseDto, TicketStatus} from "@app/contracts";
+import {EventResponseDto, EventTicketResponseDto, TicketResponseDto, TicketStatus} from "@app/contracts";
 
 
 type TicketWithOwner = Prisma.TicketGetPayload<{
@@ -18,7 +18,7 @@ export class TicketsServiceMapper {
     private constructor() {
     }
 
-    static toTicketResponseDto(ticket: Ticket, event: Event): TicketResponseDto {
+    static toTicketResponseDto(ticket: Ticket, event: Event | EventResponseDto): TicketResponseDto {
         return {
             id: ticket.id,
             eventTitle: event.title,

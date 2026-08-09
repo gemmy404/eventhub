@@ -1,12 +1,21 @@
 import {Body, Controller, Get, Headers, Param, Patch, Post, Query} from '@nestjs/common';
 import {EventsServiceService} from './events-service.service';
-import {CreateEventRequestDto, PaginationQueryDto, UpdateEventRequestDto} from "@app/contracts";
+import {
+    CreateEventRequestDto,
+    FindEventByIdPayloadDto, GetEventForTicketsResponseDto,
+    PaginationQueryDto,
+    UpdateEventRequestDto
+} from "@app/contracts";
 import {EventResponseDto} from "@app/contracts/events/dto/event-response.dto";
+import {MessagePattern, Payload} from "@nestjs/microservices";
+import {EVENT_PATTERNS} from "@app/kafka";
 
 @Controller('events')
 export class EventsServiceController {
     constructor(private readonly eventsServiceService: EventsServiceService) {
     }
+
+    //------------------------------- REST -----------------------------------
 
     @Post()
     createEvent(
@@ -59,6 +68,15 @@ export class EventsServiceController {
         @Headers('x-user-id') userId: string,
     ): Promise<EventResponseDto> {
         return this.eventsServiceService.updateEvent(eventId, updateEventRequest, userId);
+    }
+
+    //------------------------------- Kafka -----------------------------------
+
+    @MessagePattern(EVENT_PATTERNS.GET_EVENT_FOR_TICKETS)
+    async findEventByIdByKafka(
+        @Payload() payload: FindEventByIdPayloadDto,
+    ): Promise<GetEventForTicketsResponseDto | EventResponseDto> {
+        return this.eventsServiceService.findEventById(payload.eventId);
     }
 
 }

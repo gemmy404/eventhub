@@ -6,11 +6,12 @@ import {
     NotFoundException,
     OnModuleInit
 } from '@nestjs/common';
-import {KAFKA_SERVICE, KAFKA_TOPICS} from "@app/kafka";
+import {EVENT_PATTERNS, KAFKA_SERVICE, KAFKA_TOPICS} from "@app/kafka";
 import {ClientKafka} from "@nestjs/microservices";
 import {TicketsServiceRepository} from "./tickets-service.repository";
 import {
     CheckedInTicketRequestDto,
+    EventResponseDto,
     EventTicketResponseDto,
     PaginationQueryDto,
     PurchaseTicketRequestDto,
@@ -18,10 +19,11 @@ import {
     TicketPurchasedEvent,
     TicketResponseDto
 } from "@app/contracts";
-import {EventsServiceRepository} from "../../events-service/src/events-service.repository";
 import {Event, EventStatus, Ticket, TicketStatus} from "@prisma/client";
 import {generateCodes} from "@app/common";
 import {TicketsServiceMapper} from "./tickets-service.mapper";
+import {firstValueFrom} from "rxjs";
+import {GetEventForTicketsResponseDto} from "@app/contracts/events/dto/get-event-for-tickets-response.dto";
 
 @Injectable()
 export class TicketsServiceService implements OnModuleInit {
@@ -29,11 +31,14 @@ export class TicketsServiceService implements OnModuleInit {
     constructor(
         @Inject(KAFKA_SERVICE) private readonly kafkaClient: ClientKafka,
         private readonly ticketsRepository: TicketsServiceRepository,
-        private readonly eventsRepository: EventsServiceRepository,
     ) {
     }
 
     async onModuleInit() {
+        this.kafkaClient.subscribeToResponseOf(
+            EVENT_PATTERNS.GET_EVENT_FOR_TICKETS,
+        );
+
         await this.kafkaClient.connect();
     }
 
@@ -43,7 +48,15 @@ export class TicketsServiceService implements OnModuleInit {
     ): Promise<TicketResponseDto> {
         const {eventId, quantity} = purchaseTicketRequest;
 
-        const savedEvent = await this.eventsRepository.findEventById(eventId);
+        const savedEvent: EventResponseDto = await firstValueFrom(
+            this.kafkaClient.send<EventResponseDto>(
+                EVENT_PATTERNS.GET_EVENT_FOR_TICKETS,
+                {
+                    eventId,
+                },
+            )
+        );
+
         if (!savedEvent) {
             throw new NotFoundException(`Event with id ${eventId} not found`);
         }
@@ -52,15 +65,21 @@ export class TicketsServiceService implements OnModuleInit {
             throw new BadRequestException('Event is not published yet');
         }
 
-        if ((savedEvent.date.getTime() + (60 * 60 * 1000)) < new Date().getTime()) {
-            throw new BadRequestException('No longer available to purchase tickets for this event as it has passed');
+        const eventDate = new Date(savedEvent.date);
+
+        if ((eventDate.getTime() + (60 * 60 * 1000)) < new Date().getTime()) {
+            throw new BadRequestException(
+                'No longer available to purchase tickets for this event as it has passed'
+            );
         }
 
         const soldTickets: number = await this.ticketsRepository.countSoldTickets(eventId);
         const remainingTickets: number = savedEvent.capacity - soldTickets;
 
         if (quantity > remainingTickets) {
-            throw new BadRequestException(`Only ${remainingTickets} tickets are available for this event`);
+            throw new BadRequestException(
+                `Only ${remainingTickets} tickets are available for this event`
+            );
         }
 
         const ticket = {
@@ -80,7 +99,7 @@ export class TicketsServiceService implements OnModuleInit {
             email: createdTicket.user.email,
             name: createdTicket.user.name,
             eventTitle: savedEvent.title,
-            eventDate: savedEvent.date,
+            eventDate: eventDate,
             eventLocation: savedEvent.location,
             quantity: createdTicket.quantity,
             totalPrice: createdTicket.totalPrice,
@@ -116,7 +135,14 @@ export class TicketsServiceService implements OnModuleInit {
         const {size, page} = paginationQuery;
         const skip: number = (page - 1) * size;
 
-        const savedEvent = await this.eventsRepository.findEventById(eventId);
+        const savedEvent = await firstValueFrom(
+            this.kafkaClient.send<GetEventForTicketsResponseDto>(
+                EVENT_PATTERNS.GET_EVENT_FOR_TICKETS,
+                {
+                    eventId,
+                },
+            )
+        );
         if (!savedEvent) {
             throw new NotFoundException(`Event with id ${eventId} not found`);
         }
@@ -198,5 +224,5 @@ export class TicketsServiceService implements OnModuleInit {
 
         return null;
     }
-    
+
 }

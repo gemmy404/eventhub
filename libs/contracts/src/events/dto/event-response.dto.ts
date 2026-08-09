@@ -7,7 +7,7 @@ export class EventResponseDto {
 
     description: string | null;
 
-    date: Date;
+    date: string;
 
     location: string;
 

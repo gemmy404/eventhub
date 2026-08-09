@@ -9,10 +9,15 @@ import {
 import {KAFKA_SERVICE, KAFKA_TOPICS} from "@app/kafka";
 import {ClientKafka} from "@nestjs/microservices";
 import {EventsServiceRepository} from "./events-service.repository";
-import {CreateEventRequestDto, PaginationQueryDto, UpdateEventRequestDto} from "@app/contracts";
+import {
+    CreateEventRequestDto,
+    EventResponseDto,
+    GetEventForTicketsResponseDto,
+    PaginationQueryDto,
+    UpdateEventRequestDto
+} from "@app/contracts";
 import {Event, EventStatus} from "@prisma/client";
 import {EventsServiceMapper} from "./events-service.mapper";
-import {EventResponseDto} from "@app/contracts/events/dto/event-response.dto";
 
 @Injectable()
 export class EventsServiceService implements OnModuleInit {
@@ -61,13 +66,13 @@ export class EventsServiceService implements OnModuleInit {
         };
     }
 
-    async findEventById(id: string): Promise<EventResponseDto> {
+    async findEventById(id: string): Promise<EventResponseDto | GetEventForTicketsResponseDto> {
         const savedEvent: Event | null = await this.eventsRepository.findEventById(id);
         if (!savedEvent) {
             throw new NotFoundException(`Event with id ${id} not found`);
         }
 
-        return EventsServiceMapper.toEventResponseDto(savedEvent);
+        return {...EventsServiceMapper.toEventResponseDto(savedEvent), organizerId: savedEvent.organizerId};
     }
 
     private async findEventEntityById(id: string): Promise<Event> {

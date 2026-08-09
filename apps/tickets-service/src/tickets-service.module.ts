@@ -6,7 +6,6 @@ import {ConfigModule} from "@nestjs/config";
 import {PrismaModule} from "@app/database";
 import {TicketsServiceRepository} from "./tickets-service.repository";
 import {APP_PIPE} from "@nestjs/core";
-import {EventsServiceModule} from "../../events-service/src/events-service.module";
 import {IsTicketOwnerGuard} from "./is-ticket-owner.guard";
 
 @Module({
@@ -16,7 +15,6 @@ import {IsTicketOwnerGuard} from "./is-ticket-owner.guard";
         }),
         PrismaModule,
         KafkaModule.register('tickets-service-group'),
-        EventsServiceModule,
     ],
     controllers: [TicketsServiceController],
     providers: [

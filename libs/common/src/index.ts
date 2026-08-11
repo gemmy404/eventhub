@@ -18,3 +18,9 @@ export * from './decorators';
 
 // Utils
 export * from './utils';
+
+// Exceptions
+export * from './exceptions';
+
+// Filters
+export * from './filters';

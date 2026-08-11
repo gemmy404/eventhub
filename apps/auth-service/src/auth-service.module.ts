@@ -4,10 +4,14 @@ import {AuthServiceService} from './auth-service.service';
 import {KafkaModule} from "@app/kafka";
 import {JwtModule} from "@nestjs/jwt";
 import {ConfigModule, ConfigService} from "@nestjs/config";
-import {JWT_CONFIG} from "@app/common";
+import {AllExceptionsFilter, JWT_CONFIG, ValidationException} from "@app/common";
 import {AuthServiceRepository} from "./auth-service.repository";
 import {PrismaModule} from "@app/database";
 import {JwtStrategy} from "./jwt.strategy";
+import {AdminService} from "./admin/admin.service";
+import {AdminController} from "./admin/admin.controller";
+import {ValidationError} from "class-validator";
+import {APP_FILTER, APP_PIPE} from "@nestjs/core";
 
 @Module({
     imports: [
@@ -27,18 +31,35 @@ import {JwtStrategy} from "./jwt.strategy";
         }),
         KafkaModule.register('auth-service-group'),
     ],
-    controllers: [AuthServiceController],
+    controllers: [AuthServiceController, AdminController],
     providers: [
         AuthServiceRepository,
         AuthServiceService,
+        AdminService,
         JwtStrategy,
         {
-            provide: 'APP_PIPE',
+            provide: APP_PIPE,
             useValue: new ValidationPipe({
                 whitelist: true,
                 forbidNonWhitelisted: true,
                 transform: true,
+                exceptionFactory: (errors: ValidationError[]) => {
+                    const extractErrors = (errorList: ValidationError[]) => {
+                        return errorList.flatMap((err: ValidationError) => {
+                            const constraints: string[] = err.constraints ? Object.values(err.constraints) : [];
+                            const childErrors: string[] = err.children ? extractErrors(err.children) : [];
+                            return [...constraints, ...childErrors];
+                        });
+                    };
+                    const messages: string[] = extractErrors(errors);
+
+                    return new ValidationException(messages, 400);
+                },
             }),
+        },
+        {
+            provide: APP_FILTER,
+            useClass: AllExceptionsFilter,
         },
     ],
 })

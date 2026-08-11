@@ -135,7 +135,7 @@ export class TicketsService {
         currentUser: CurrentUserDto
     ): Promise<AppResponseDto<null>> {
         try {
-            const {data} = await firstValueFrom(
+            await firstValueFrom(
                 this.httpService.patch<null>(
                     `${this.TICKETS_SERVICE_URL}/${ticketId}/cancel-ticket`,
                     {},
@@ -150,7 +150,7 @@ export class TicketsService {
             return {
                 status: HttpStatusText.SUCCESS,
                 message: 'Ticket cancelled successfully',
-                data: data,
+                data: null,
             };
         } catch (err) {
             handleServiceError(err);
@@ -162,7 +162,7 @@ export class TicketsService {
         currentUser: CurrentUserDto
     ): Promise<AppResponseDto<null>> {
         try {
-            const {data} = await firstValueFrom(
+            await firstValueFrom(
                 this.httpService.patch<null>(
                     `${this.TICKETS_SERVICE_URL}/check-in-ticket`,
                     checkedInTicketRequest,
@@ -177,7 +177,7 @@ export class TicketsService {
             return {
                 status: HttpStatusText.SUCCESS,
                 message: 'Ticket checked in successfully',
-                data: data,
+                data: null,
             };
         } catch (err) {
             handleServiceError(err);

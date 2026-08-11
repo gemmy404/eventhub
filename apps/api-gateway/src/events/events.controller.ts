@@ -5,11 +5,12 @@ import {
     CreateEventRequestDto,
     CurrentUserDto,
     PaginationQueryDto,
-    UpdateEventRequestDto
+    UpdateEventRequestDto, UserRoles
 } from "@app/contracts";
-import {CurrentUser} from "@app/common";
+import {CurrentUser, Roles} from "@app/common";
 import {JwtAuthGuard} from "../../../auth-service/src/jwt-auth.guard";
 import {EventResponseDto} from "@app/contracts/events/dto/event-response.dto";
+import {RolesGuard} from "../../../auth-service/src/roles.guard";
 
 @Controller('api/v1/events')
 export class EventsController {
@@ -18,7 +19,8 @@ export class EventsController {
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     createEvent(
         @Body() createEventRequest: CreateEventRequestDto,
         @CurrentUser() currentUser: CurrentUserDto
@@ -34,7 +36,8 @@ export class EventsController {
     }
 
     @Get('me')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     findMyEvents(
         @Query() paginationQuery: PaginationQueryDto,
         @CurrentUser() currentUser: CurrentUserDto
@@ -48,7 +51,8 @@ export class EventsController {
     }
 
     @Patch(':eventId/publish-event')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     publishEvent(
         @Param('eventId') eventId: string,
         @CurrentUser() currentUser: CurrentUserDto
@@ -57,7 +61,8 @@ export class EventsController {
     }
 
     @Patch(':eventId/cancel-event')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     cancelEvent(
         @Param('eventId') eventId: string,
         @CurrentUser() currentUser: CurrentUserDto
@@ -66,7 +71,8 @@ export class EventsController {
     }
 
     @Patch(':eventId')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     updateEvent(
         @Param('eventId') eventId: string,
         @Body() updateEventRequest: UpdateEventRequestDto,

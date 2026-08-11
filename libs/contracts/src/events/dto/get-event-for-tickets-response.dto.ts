@@ -1,4 +1,4 @@
-import {EventResponseDto} from "@app/contracts/events";
+import {EventResponseDto} from "./event-response.dto";
 
 export class GetEventForTicketsResponseDto extends EventResponseDto{
     organizerId: string;

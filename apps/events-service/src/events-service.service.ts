@@ -34,7 +34,8 @@ export class EventsServiceService implements OnModuleInit {
 
     async createEvent(createEventRequest: CreateEventRequestDto, userId: string): Promise<EventResponseDto> {
         const createdEvent = await this.eventsRepository.createEvent({
-            ...createEventRequest,
+            ...createEventRequest
+            ,date: new Date(createEventRequest.date),
             organizerId: userId,
         } as Event);
 
@@ -95,9 +96,11 @@ export class EventsServiceService implements OnModuleInit {
             throw new ForbiddenException('You are not authorized to update this event');
         }
 
+        const date = updateEventRequest.date ? new Date(updateEventRequest.date) : savedEvent.date
+
         const updatedData = await this.eventsRepository.updateEvent(
             id,
-            updateEventRequest as Event
+            {...updateEventRequest, date: date} as Event,
         );
 
         this.kafkaClient.emit(KAFKA_TOPICS.EVENT_UPDATED, {

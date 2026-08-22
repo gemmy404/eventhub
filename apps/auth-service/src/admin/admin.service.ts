@@ -1,9 +1,10 @@
 import {ConflictException, Injectable} from "@nestjs/common";
 import {AuthServiceRepository} from "../auth-service.repository";
-import {CreateUserRequestDto, RegisterResponseDto, UserRegisteredEvent, UserRoles} from "@app/contracts";
+import {CreateUserRequestDto, RegisterResponseDto, UserRoles} from "@app/contracts";
 import {hash} from "bcrypt";
 import {User, UserRole} from "@prisma/client";
-import {KAFKA_TOPICS} from "@app/kafka";
+import {AllUsersQueryDto} from "@app/contracts/auth/dto/all-users-query.dto";
+import {UserResponseDto} from "@app/contracts/auth/dto/user-response.dto";
 
 @Injectable()
 export class AdminService {
@@ -35,6 +36,29 @@ export class AdminService {
         } as User);
 
         return {userId: createdUser.id};
+    }
+
+    async findAllUsers(
+        allUsersQuery: AllUsersQueryDto
+    ): Promise<{ users: UserResponseDto[], totalElements: number }> {
+        const {page, size, role} = allUsersQuery;
+        let query: { role?: UserRoles } = {};
+
+        if (role) {
+            query.role = role;
+        }
+
+        const skip: number = (page - 1) * size;
+        const {users, totalElements} = await this.authRepository.findAllUsers(query, size, skip);
+        return {
+            users: users.map(user => ({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            })),
+            totalElements: totalElements
+        };
     }
 
 }

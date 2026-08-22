@@ -22,6 +22,25 @@ export class AuthServiceRepository {
         });
     }
 
+    async findAllUsers(query: {}, take: number, skip: number) {
+        const [users, totalElements] = await Promise.all([
+                this.prisma.user.findMany({
+                    where: query,
+                    take,
+                    skip,
+                    omit: {password: true},
+                    orderBy: [
+                        {role: 'desc'},
+                        {createdAt: 'desc'},
+                    ]
+                }),
+                this.prisma.user.count({where: query}),
+            ]
+        );
+
+        return {users, totalElements};
+    }
+
     async createUser(user: User) {
         return this.prisma.user.create({
             data: user,

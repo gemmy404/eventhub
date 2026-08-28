@@ -28,6 +28,10 @@ The system is organized as a **monorepo** with independently deployable NestJS s
 
 ---
 
+## Related Repository
+
+- Frontend: [EventHub Frontend](https://github.com/gemmy404/eventhub-ui.git)
+
 ## Features
 
 <table>

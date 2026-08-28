@@ -5,10 +5,11 @@ import {
     CheckedInTicketRequestDto,
     CurrentUserDto, EventTicketResponseDto,
     PaginationQueryDto,
-    PurchaseTicketRequestDto, TicketResponseDto
+    PurchaseTicketRequestDto, TicketResponseDto, UserRoles
 } from "@app/contracts";
-import {CurrentUser} from "@app/common";
+import {CurrentUser, Roles} from "@app/common";
 import {JwtAuthGuard} from "../../../auth-service/src/jwt-auth.guard";
+import {RolesGuard} from "../../../auth-service/src/roles.guard";
 
 @Controller('api/v1/tickets')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +34,8 @@ export class TicketsController {
     }
 
     @Get('events/:eventId')
+    @UseGuards(RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     findEventTickets(
         @Param('eventId') eventId: string,
         @CurrentUser() currentUser: CurrentUserDto,
@@ -58,6 +61,8 @@ export class TicketsController {
     }
 
     @Patch('check-in-ticket')
+    @UseGuards(RolesGuard)
+    @Roles(UserRoles.ORGANIZER)
     checkInTicket(
         @Body() checkedInTicketRequest: CheckedInTicketRequestDto,
         @CurrentUser() currentUser: CurrentUserDto

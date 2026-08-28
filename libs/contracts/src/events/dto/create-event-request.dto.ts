@@ -11,7 +11,7 @@ export class CreateEventRequestDto {
 
     @IsNotEmpty({message: 'Date is required'})
     @IsDateString({}, {message: 'Date must be a valid date string'})
-    date: Date;
+    date: string;
 
     @IsNotEmpty({message: 'Location is required'})
     @MaxLength(255, {message: 'Location must be not exceed 255 characters'})
